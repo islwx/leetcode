@@ -1,1 +1,3 @@
 # leetcode
+
+Sync some code
