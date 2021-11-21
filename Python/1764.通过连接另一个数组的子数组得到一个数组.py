@@ -8,7 +8,7 @@
 class Solution:
     def canChoose(self, groups: List[List[int]], nums: List[int]) -> bool:
         """
-        速度最好，但内存占用高
+        # TODO 速度最好，但内存占用高
         """
         str_nums = " "+str(nums)[1:-1]+","
         for cur_seq in groups:

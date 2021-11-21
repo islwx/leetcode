@@ -31,6 +31,9 @@ class Solution:
                     return r1
             return None
     def lowestCommonAncestor(self, root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -> 'TreeNode':
+        """
+        # TODO 待优化
+        """
         if root.val == p.val:
             return root
         if root.val == q.val:
