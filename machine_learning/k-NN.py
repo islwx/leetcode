@@ -57,10 +57,10 @@ class KNN:
                 self.k = cur_k
                 predictions = self.predict(val_data)
                 acc = accuracy_score(predictions, val_target)
-                print([cur_k, acc])
+                logger.debug([cur_k, acc])
                 result.append([cur_k, acc])
             self.k=sorted(result,reverse=True, key=lambda x:x[1])[0]
-            print(f"k:{self.k}")
+            logger.debug(f"k:{self.k}")
         self.data = data_
         self.target = target_
     
@@ -128,7 +128,7 @@ class KDTree_bak:
         nn_cases = self._infer_nn_cases(feat, root_nn_node, None)
         c=Counter(nn_cases.label)
         return c.most_common(1)[0][0]
-class KDTreeNode:
+class KDTreeNode_bak:
     def __init__(self, cases, medians, parent=None):
         self._dim = None
         self.parent = parent
@@ -222,9 +222,9 @@ class KDTreeNode:
         return max(deep0, deep1)+1, counts0+counts1+1
 
     def search_nn_node(self, feat):
-        if not sub_nodes:
+        if not self.sub_nodes:
             return self
-        if feat[dim]>self.median:
+        if feat[self.dim]>self.median:
             return self.sub_nodes[0].search_nn_node(feat)
         else:
             return self.sub_nodes[1].search_nn_node(feat)
@@ -251,25 +251,28 @@ class KDTree:
                 self.k = cur_k
                 predictions = self.predict(val_data)
                 acc = accuracy_score(predictions, val_target)
-                print([cur_k, acc])
+                logger.debug([cur_k, acc])
                 result.append([cur_k, acc])
             self.k=sorted(result,reverse=True, key=lambda x:x[1])[0][0]
-            print(f"k:{self.k}")
+            logger.debug(f"k:{self.k}")
         self.build(feats, labels)
         
+    
+
     def search(self, feats):
         for feat in feats:
-            nn_node = self.root.search_nn_node(feat)
+            self._search(feat)
 
 
-    def _predict(self, dis):
-        distances = dis.argsort()[:self.k]
-        counter = Counter([self.target.iloc[index] for index in distances])
-        return counter.most_common(1)[0][0]
+    def _predict(self, feat):
+        nn_node = self.root.search_nn_node(feat)
+        return nn_node
+        
+        
 
     def predict(self, data_: np.ndarray) -> int:
-        all_distances = self.calc_distance(data_, self.data)
-        return [self._predict(distances) for distances in all_distances]        
+         return [self._predict(feat) for feat in data_]
+        
             
 
         
@@ -286,7 +289,7 @@ def example_knn():
     model.fit(x_train, y_train,train_val=True)
     # model.fit(x_train, y_train,train_val=False)
     predictions = model.predict(x_test)
-    print(accuracy_score(predictions, y_test))
+    logger.debug(accuracy_score(predictions, y_test))
 
 def example_kd_tree():
     wine = load_wine(return_X_y=True, as_frame=True)
@@ -301,8 +304,8 @@ def example_kd_tree():
     model = KDTree(k=10)
     model.fit(x_train, y_train, train_val=False)
     # model.fit(x_train, y_train,train_val=False)
-    # predictions = model.predict(x_test)
-    # print(accuracy_score(predictions, y_test))
+    predictions = model.predict(x_test)
+    # logger.debug(accuracy_score(predictions, y_test))
 
 
 if __name__ == '__main__':
