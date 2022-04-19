@@ -9,8 +9,9 @@ from pandas import DataFrame
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import MinMaxScaler
 import time
+from copy import deepcopy
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.CRITICAL)
 logger = logging.getLogger(__name__)
 
 
@@ -181,13 +182,18 @@ class KDTreeNode_bak:
     
 class KDTreeNode:
     def __init__(self, feats=np.empty(0), labels=np.empty(0), parent=None):
-        self.feats:np.ndarray = feats
-        self.labels:np.ndarray = labels
         self.median = -1
         self.dim = -1
-        self.parent = parent
         self.sub_nodes = []
+        self.feats:np.ndarray = feats
+        self.labels:np.ndarray = labels
+        self.parent = parent
+        self._visibled = False
         self.build_sub_node()
+    
+    @property
+    def is_leaf(self):
+        return not self.sub_nodes
     
     def build_sub_node(self):
         logger.debug(f"size: {len(self)}, same_label:{(self.labels == self.labels[0]).all()}")
@@ -228,8 +234,158 @@ class KDTreeNode:
             return self.sub_nodes[0].search_nn_node(feat)
         else:
             return self.sub_nodes[1].search_nn_node(feat)
+    
+    @property
+    def visibled(self):
+        if self.sub_nodes:
+            _visibled = True
+            for sub_node in self.sub_nodes:
+                if not sub_node.visibled:
+                    _visibled = False
+                    break
+            self._visibled = _visibled
+        return self._visibled
+    
+    @visibled.setter
+    def visibled(self, val):
+        for sub_node in self.sub_nodes: 
+            sub_node.visibled=val
+        self._visibled = val
+
+
+"""
+        
+    def _view_left_node(self, node, feat, nn_feat, nn_label, nn_d):
+        distances = self.calc_distance(feat.reshape[1,-1], node.feats)[0]
+        d_max_ind = np.argmax(nn_d) if len(nn_d)>0 else 0
+        d_max = nn_d[d_max_ind] if len(nn_d)>0 else 0
+        for feat, label, distance in zip(node.feats, node.labels, distance):
+            if len(nn_d)<self.k:
+                nn_feats.append(feat)
+                nn_label.append(label)
+                nn_d.append(distance)
+                if distance>=d_max:
+                    d_max = distance
+                    d_max_ind = -1
+            elif distance<d_max:
+                nn_feats[d_max_ind]=feat
+                nn_label[d_max_ind]=label
+                nn_d[d_max_ind]=distance
+                d_max_ind = np.argmax(nn_d)
+                d_max = nn_d[d_max_ind]
+        node.visibled = True
+    
+    def view_node(self, node, feat, nn_feat, nn_label, nn_d, parant):
+        if node.is_leaf:
+            if not node.visibled:
+                self._view_left_node(node, feat, nn_feat, nn_label, nn_d)
+            
+        else:
+            node.median
+
+            
+            
+        else:
+            nn_node = node.search_nn_node(feat)
+            self.view_node(nn_node, feat, nn_feat, nn_label, nn_d)
+
             
 
+
+    def search(self, feats):
+        for feat in feats:
+            self._search(feat)
+    
+    def view_node(self, nn_node, feat, nn_feat, nn_label, nn_d):
+        if nn_node.visibled: # 已经观察过的节点
+            return 
+        elif not nn_node.sub_nodes: # 还没观察的叶子节点
+            distances = self.calc_distance(feat.reshape[1,-1], nn_node.feats)[0]
+            d_max_ind = np.argmax(nn_d) if len(nn_d)>0 else 0
+            d_max = nn_d[d_max_ind] if len(nn_d)>0 else 0
+            for feat, label, distance in zip(nn_node.feats, nn_node.labels, distance):
+                if len(nn_d)<self.k:
+                    nn_feats.append(feat)
+                    nn_label.append(label)
+                    nn_d.append(distance)
+                    if distance>=d_max:
+                        d_max = distance
+                        d_max_ind = -1
+                elif distance<d_max:
+                    nn_feats[d_max_ind]=feat
+                    nn_label[d_max_ind]=label
+                    nn_d[d_max_ind]=distance
+                    d_max_ind = np.argmax(nn_d)
+                    d_max = nn_d[d_max_ind]
+            nn_node.visibled = True
+        else:   # 非叶节点
+            
+    def view_parent_node(parent, ori_node, ):
+
+
+    def recursion_nn_node(self, nn_node, feat, nn_feat, nn_label, nn_d):
+        if nn_node.parant is None:
+            return
+        parent = nn_node.parent
+
+
+        is_left = parent.sub_nodes[0] is nn_node
+        self.view(nn_node, feat, nn_feat, nn_label, nn_d)
+        other_node = parent.sub_nodes[is_left]
+        self.view(other_node, feat, nn_feat, nn_label, nn_d)
+        self.recursion_nn_node(parent, feat, nn_feat, nn_label, nn_d)
+
+        
+        
+
+
+
+        nn_node.visibled = True
+        distances = self.calc_distance(feat.reshape[1,-1], nn_node.feats)[0]
+        d_max_ind = np.argmax(nn_d)
+        d_max = nn_d[d_max_ind]
+        for feat, label, distance in zip(nn_node.feats, nn_node.labels, distance):
+            if len(nn_d)<self.k:
+                nn_feats.append(feat)
+                nn_label.append(label)
+                nn_d.append(distance)
+                if distance>=d_max:
+                    d_max = distance
+                    d_max_ind = -1
+            elif distance<d_max:
+                nn_feats[d_max_ind]=feat
+                nn_label[d_max_ind]=label
+                nn_d[d_max_ind]=distance
+                d_max_ind = np.argmax(nn_d)
+                d_max = nn_d[d_max_ind]
+        paren = nn_node.parent
+        if paren is None:
+            nn_node.reset_visibled()
+            return nn_feat, nn_label, nn_d
+        else:
+            median_feat = deepcopy(nn_feats[d_max_ind])
+            median_feat[paren.dim]=paran.median
+            median_feat_distance = self.calc_distance(feat.reshape[1,-1], median_feat.reshape[1,-1])[0][0]
+            if median_feat_distance<d_max:
+                is_left = paren.sub_node[0] is nn_node
+                other_nn_node = paren.sub_node[is_left]
+
+
+    
+                
+    def view_node(self, node, feat, nn_feat, nn_label, nn_d):
+        if node.visibled:
+            return 
+            self.view_node(node, feat, nn_feat, nn_label, nn_d)
+            
+        else:
+            nn_node = node.search_nn_node(node, feat)
+            if 
+        
+
+        
+
+"""
 class KDTree:
     def __init__(self, k: int=10):
         self.k: int = k
@@ -256,22 +412,70 @@ class KDTree:
             self.k=sorted(result,reverse=True, key=lambda x:x[1])[0][0]
             logger.debug(f"k:{self.k}")
         self.build(feats, labels)
-        
+
     
+    def do_view(self, node, feat, nn_d):
+        assert not node.is_leaf
+        assert nn_d
+        d_max = max(nn_d)
+        median_feat = deepcopy(feat)
+        median_feat[node.dim]=node.median
+        median_feat_distance = self.calc_distance(feat.reshape(1,-1), median_feat.reshape(1,-1))[0][0]
+        return median_feat_distance<d_max
 
-    def search(self, feats):
-        for feat in feats:
-            self._search(feat)
+    def view_leaf_node(self, node, feat, nn_feat, nn_label, nn_d):
+        distances = self.calc_distance(feat.reshape(1,-1), node.feats)[0]
+        d_max_ind = np.argmax(nn_d) if len(nn_d)>0 else 0
+        d_max = nn_d[d_max_ind] if len(nn_d)>0 else 0
+        for feat, label, distance in zip(node.feats, node.labels, distances):
+            if len(nn_d)<self.k:
+                nn_feat.append(feat)
+                nn_label.append(label)
+                nn_d.append(distance)
+                if distance>=d_max:
+                    d_max = distance
+                    d_max_ind = -1
+            elif distance<d_max:
+                nn_feat[d_max_ind]=feat
+                nn_label[d_max_ind]=label
+                nn_d[d_max_ind]=distance
+                d_max_ind = np.argmax(nn_d)
+                d_max = nn_d[d_max_ind]
+        node.visibled = True
 
+    def breaktrace(self, node, feat, nn_feat, nn_label, nn_d, root=None):
+        if not node.visibled:
+            if node.is_leaf:
+                self.view_leaf_node(node, feat, nn_feat, nn_label, nn_d)
+            else:
+                do_view = self.do_view(node, feat, nn_d)
+                if do_view:
+                    first_ind = not(feat[node.dim]>node.median)
+                    self.breaktrace(node.sub_nodes[first_ind],     feat, nn_feat, nn_label, nn_d, node)
+                    self.breaktrace(node.sub_nodes[not first_ind], feat, nn_feat, nn_label, nn_d, node)
+                else:
+                    logger.critical(f"1:{node.deep()}")
+                node.visibled=True
+        if node.parent is not root:
+            self.breaktrace(node.parent, feat, nn_feat, nn_label, nn_d, root)
 
     def _predict(self, feat):
+        nn_feat = []
+        nn_label = []
+        nn_d = []
+        self.root.visibled=False
         nn_node = self.root.search_nn_node(feat)
-        return nn_node
+        self.breaktrace(nn_node, feat, nn_feat, nn_label, nn_d, None)
         
-        
+        return nn_label
 
     def predict(self, data_: np.ndarray) -> int:
-         return [self._predict(feat) for feat in data_]
+        predictions = []
+        for feat in data_:
+            nn_label = self._predict(feat)
+            c = Counter(nn_label)
+            predictions.append(c.most_common()[0][0])
+        return predictions
         
             
 
@@ -285,10 +489,15 @@ def example_knn():
     scalar = MinMaxScaler()
     x_train = scalar.fit_transform(x_train,)
     x_test = scalar.fit_transform(x_test)
-    model = KDTree(k=10)
-    model.fit(x_train, y_train,train_val=True)
-    # model.fit(x_train, y_train,train_val=False)
+    # y_train = y_train.to_numpy()
+    # y_test = y_test.to_numpy()
+    model = KNN(k=10)
+    # model.fit(x_train, y_train,train_val=True)
+    model.fit(x_train, y_train,train_val=False)
+    a=time.time()
     predictions = model.predict(x_test)
+    b=time.time()
+    logger.critical(f"knn: {b-a}")
     logger.debug(accuracy_score(predictions, y_test))
 
 def example_kd_tree():
@@ -304,9 +513,13 @@ def example_kd_tree():
     model = KDTree(k=10)
     model.fit(x_train, y_train, train_val=False)
     # model.fit(x_train, y_train,train_val=False)
+    a=time.time()
     predictions = model.predict(x_test)
-    # logger.debug(accuracy_score(predictions, y_test))
+    b=time.time()
+    logger.critical(f"kd-tree: {b-a}")
+    logger.debug(accuracy_score(predictions, y_test))
 
 
 if __name__ == '__main__':
+    example_knn()
     example_kd_tree()
