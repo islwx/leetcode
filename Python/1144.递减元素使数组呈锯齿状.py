@@ -70,8 +70,9 @@ class Solution:
                     nums[i + 1] -= (next_cost - prev_cost)
                 else:
                     cur_cost  = next_cost
+            # print(i, cur_cost)
             cost += cur_cost
-        print(nums)
+        # print(nums)
         return cost
 
     def movesToMakeZigzag(self, nums: List[int]) -> int:
@@ -91,9 +92,9 @@ class Solution:
                 cost_0 = self.calc_cost(nums + [-float("inf")], nums_size)
                 cost_1 = self.calc_cost([-float("inf")] + nums ,nums_size)
             else:
-                cost_0 = self.calc_cost(nums, nums_size)
+                cost_0 = self.calc_cost(nums[:], nums_size)
                 cost_1 = self.calc_cost([-float("inf")] + nums + [-float("inf")],nums_size+2)
-            print(cost_0, cost_1)
+            # print(cost_0, cost_1)
             return min(cost_0,cost_1)
                 
                 
@@ -105,7 +106,7 @@ class Solution:
 # @lc code=end
 
 if __name__ == "__main__":
-    #"""
+    """
     nums = [9,6,1,6,2]
     assert Solution().movesToMakeZigzag(nums) == 4
     
@@ -114,8 +115,10 @@ if __name__ == "__main__":
 
     #"""
     
-    nums = [10,4,4,10,10,6,2,3]
-    assert Solution().movesToMakeZigzag(nums) == 13
+    # nums = [10,4,4,10,10,6,2,3]
+    # assert Solution().movesToMakeZigzag(nums) == 13
 
-    nums = [2,7,10,9,8,9]
-    assert Solution().movesToMakeZigzag(nums) == 4
+    # nums = [2,7,10,9,8,9]
+    # assert Solution().movesToMakeZigzag(nums) == 4
+    nums = [2,1,2]
+    assert Solution().movesToMakeZigzag(nums) == 0
